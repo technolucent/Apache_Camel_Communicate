@@ -1,33 +1,18 @@
 package com.camel.oss.router;
 
-import org.apache.camel.builder.RouteBuilder;
-import org.springframework.amqp.core.Message;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.camel.builder.RouteBuilder;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+
+import com.camel.oss.config.RabbitMqConfig;
 
 @Component
 public class RouteB extends RouteBuilder {
-    private static final String QUEUE = "hello";
-
-    @Bean
-    public org.springframework.amqp.core.Queue helloQueue() {
-        return new org.springframework.amqp.core.Queue(QUEUE, true, false, false);
-    }
-
-    @Bean
-    public org.springframework.amqp.core.DirectExchange helloExchange() {
-        return new org.springframework.amqp.core.DirectExchange("hello");
-    }
-
-    @Bean
-    public org.springframework.amqp.core.Binding binding(org.springframework.amqp.core.Queue helloQueue, org.springframework.amqp.core.DirectExchange helloExchange) {
-        return org.springframework.amqp.core.BindingBuilder.bind(helloQueue).to(helloExchange).with("hello");
-    }
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
@@ -44,16 +29,11 @@ public class RouteB extends RouteBuilder {
         from("direct:read")
             .routeId("RouteRead")
             .process(exchange -> {
-                try {
-                    Message message = rabbitTemplate.receive(QUEUE, 1000);
-                    if (message != null) {
-                        String body = new String(message.getBody());
-                        exchange.getMessage().setBody(body);
-                    } else {
-                        exchange.getMessage().setBody("No messages in queue");
-                    }
-                } catch (Exception e) {
-                    exchange.getMessage().setBody("Error reading from queue: " + e.getMessage());
+                Message message = rabbitTemplate.receive(RabbitMqConfig.QUEUE, 1000);
+                if (message != null) {
+                    exchange.getMessage().setBody(new String(message.getBody()));
+                } else {
+                    exchange.getMessage().setBody("No messages in queue");
                 }
             })
             .log("Read message from queue: ${body}");
@@ -63,16 +43,12 @@ public class RouteB extends RouteBuilder {
             .routeId("RouteDrain")
             .process(exchange -> {
                 List<String> messages = new ArrayList<>();
-                try {
-                    Message message;
-                    while ((message = rabbitTemplate.receive(QUEUE, 200)) != null) {
-                        messages.add(new String(message.getBody()));
-                    }
-                    if (messages.isEmpty()) {
-                        messages.add("No messages in queue");
-                    }
-                } catch (Exception e) {
-                    messages.add("Error draining queue: " + e.getMessage());
+                Message message;
+                while ((message = rabbitTemplate.receive(RabbitMqConfig.QUEUE, 200)) != null) {
+                    messages.add(new String(message.getBody()));
+                }
+                if (messages.isEmpty()) {
+                    messages.add("No messages in queue");
                 }
                 exchange.getMessage().setBody(messages);
             })
