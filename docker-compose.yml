@@ -1,6 +1,6 @@
 services:
   rabbitmq:
-    image: rabbitmq:management
+    image: rabbitmq:3.13-management
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -13,12 +13,12 @@ services:
       retries: 12
 
   jaeger:
-      image: jaegertracing/all-in-one:latest
-      environment:
-        - COLLECTOR_OTLP_ENABLED=true
-      ports:
-        - "16686:16686" # Jaeger Web UI
-        - "4318:4318"   # OTLP HTTP receiver (what Spring Boot talks to)
+    image: jaegertracing/all-in-one:1.59
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # Jaeger Web UI
+      - "4318:4318"   # OTLP HTTP receiver (what Spring Boot talks to)
   camel-app:
     build: .
     depends_on:
@@ -28,12 +28,17 @@ services:
         condition: service_started
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
-      # Turn on the magic agent!
       - JAVA_TOOL_OPTIONS=-javaagent:/app/opentelemetry-javaagent.jar
       - OTEL_SERVICE_NAME=camel-oss
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
 volumes:
   rabbitmq-data:

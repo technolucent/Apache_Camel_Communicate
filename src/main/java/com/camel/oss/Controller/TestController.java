@@ -8,6 +8,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 @RestController
 public class TestController {
 
@@ -15,20 +20,14 @@ public class TestController {
     private ProducerTemplate producerTemplate;
 
     @GetMapping("/trigger")
-    public String triggerRoute(@RequestParam String message) {
-        if (message == null || message.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "message must not be blank");
-        }
+    public String triggerRoute(@RequestParam @NotBlank @Size(max = 10000) String message) {
         // Pushes the message into the direct endpoint
         producerTemplate.sendBody("direct:Subscribe", message);
         return "Message sent to Camel route! " + message;
     }
 
     @GetMapping("/publish")
-    public String publishToQueue(@RequestParam String message) {
-        if (message == null || message.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "message must not be blank");
-        }
+    public String publishToQueue(@RequestParam @NotBlank @Size(max = 10000) String message) {
         // Publish through Camel route (tracing handled by OpenTelemetry agent)
         producerTemplate.sendBody("direct:publish", message);
         return "Message published successfully.";

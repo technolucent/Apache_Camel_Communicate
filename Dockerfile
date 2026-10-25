@@ -27,5 +27,5 @@ COPY --from=build /app/target/oss-*.jar app.jar
 # Expose the port your Tomcat server initialized on
 EXPOSE 8080
 
-# Run the Spring Boot application
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Run the Spring Boot application with OpenTelemetry agent
+ENTRYPOINT ["java", "-javaagent:/app/opentelemetry-javaagent.jar", "-jar", "app.jar"]
