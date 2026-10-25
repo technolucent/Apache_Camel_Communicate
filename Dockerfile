@@ -16,7 +16,8 @@ WORKDIR /app
 
 # Create a non-root system user for security
 USER root
-RUN curl -L https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar -o /app/opentelemetry-javaagent.jar
+ARG OTEL_JAVA_AGENT_VERSION=2.11.0
+RUN curl -L https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v${OTEL_JAVA_AGENT_VERSION}/opentelemetry-javaagent.jar -o /app/opentelemetry-javaagent.jar
 RUN useradd -ms /bin/bash cameluser && chown -R cameluser:cameluser /app
 USER cameluser
 

@@ -19,13 +19,13 @@ services:
       ports:
         - "16686:16686" # Jaeger Web UI
         - "4318:4318"   # OTLP HTTP receiver (what Spring Boot talks to)
-
-
   camel-app:
     build: .
     depends_on:
       rabbitmq:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
       # Turn on the magic agent!
