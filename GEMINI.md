@@ -38,3 +38,6 @@ Working dir: /home/technolucent/camelOSS/oss. Branch master, clean at review.
 ## Remaining
 - Real role-based/auth hardening and CSRF/HTTPS for production.
 - Test coverage beyond context load.
+
+## Latest (README)
+- Created README.md documenting project, run, auth, API endpoints, RabbitMQ topology, tracing, tests, config.
