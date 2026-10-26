@@ -1,5 +1,6 @@
 package com.camel.oss.config;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,22 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableWebSecurity
 public class SecurityConfig {
 
+    // No hardcoded fallbacks: APP_SECURITY_USERNAME / APP_SECURITY_PASSWORD must be provided,
+    // otherwise the application fails fast at startup.
+    @Value("${APP_SECURITY_USERNAME:}")
+    private String securityUsername;
+
+    @Value("${APP_SECURITY_PASSWORD:}")
+    private String securityPassword;
+
+    @PostConstruct
+    void validateCredentials() {
+        if (securityUsername.isBlank() || securityPassword.isBlank()) {
+            throw new IllegalStateException(
+                "APP_SECURITY_USERNAME and APP_SECURITY_PASSWORD must be set (see .env.example)");
+        }
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -30,13 +47,10 @@ public class SecurityConfig {
     }
 
     @Bean
-    public UserDetailsService userDetailsService(
-            @Value("${APP_SECURITY_USERNAME:admin}") String username,
-            @Value("${APP_SECURITY_PASSWORD:change-me}") String password,
-            PasswordEncoder passwordEncoder) {
+    public UserDetailsService userDetailsService(PasswordEncoder passwordEncoder) {
 
-        UserDetails user = User.withUsername(username)
-                .password(passwordEncoder.encode(password))
+        UserDetails user = User.withUsername(securityUsername)
+                .password(passwordEncoder.encode(securityPassword))
                 .roles("USER")
                 .build();
 
