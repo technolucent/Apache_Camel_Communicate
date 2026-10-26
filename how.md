@@ -8,28 +8,27 @@
 - Jaeger (optional if using Docker Compose)
 
 ## 1) Run with Docker Compose
+Create a `.env` file first — compose fails fast without it:
 ```bash
+cp .env.example .env
+# edit .env and set: RABBITMQ_USER, RABBITMQ_PASS, APP_SECURITY_USERNAME, APP_SECURITY_PASSWORD
 docker compose up --build
 ```
 
 Notes:
 - Starts RabbitMQ, Jaeger, and the Spring Boot app.
 - App URL: http://localhost:8080
-- RabbitMQ admin: http://localhost:15672
+- RabbitMQ admin: http://localhost:15672 (log in with `RABBITMQ_USER`/`RABBITMQ_PASS` from `.env`)
 - Jaeger UI: http://localhost:16686
-- Health check: http://localhost:8080/actuator/health
-
-Set credentials before running in a real environment:
-```bash
-export APP_SECURITY_USERNAME=admin
-export APP_SECURITY_PASSWORD=change-me
-```
+- Health check: http://localhost:8080/actuator/health (public; details require auth)
 
 ## 2) Run locally without Docker
 Start RabbitMQ and optionally Jaeger first, then run:
 ```bash
-export APP_SECURITY_USERNAME=admin
-export APP_SECURITY_PASSWORD=change-me
+export SPRING_RABBITMQ_USERNAME=<rabbit-user>
+export SPRING_RABBITMQ_PASSWORD=<rabbit-pass>
+export APP_SECURITY_USERNAME=<app-user>
+export APP_SECURITY_PASSWORD=<app-pass>
 mvn spring-boot:run
 ```
 
@@ -40,8 +39,8 @@ mvn clean package -DskipTests
 
 ## 4) Run packaged jar
 ```bash
-export APP_SECURITY_USERNAME=admin
-export APP_SECURITY_PASSWORD=change-me
+export APP_SECURITY_USERNAME=<app-user>
+export APP_SECURITY_PASSWORD=<app-pass>
 java -javaagent:/path/to/opentelemetry-javaagent.jar -jar target/oss-*.jar
 ```
 
@@ -53,35 +52,36 @@ mvn test
 Note: the integration test requires Docker/Testcontainers support.
 
 ## 6) API examples
-All requests require HTTP Basic Auth.
+All requests except `/actuator/health` and `/actuator/info` require HTTP Basic Auth
+using the `APP_SECURITY_USERNAME`/`APP_SECURITY_PASSWORD` values you set.
 
 Publish a message:
 ```bash
-curl -u admin:change-me "http://localhost:8080/publish?message=hello"
+curl -u "$APP_SECURITY_USERNAME:$APP_SECURITY_PASSWORD" "http://localhost:8080/publish?message=hello"
 ```
 
 Trigger a route:
 ```bash
-curl -u admin:change-me "http://localhost:8080/trigger?message=hello"
+curl -u "$APP_SECURITY_USERNAME:$APP_SECURITY_PASSWORD" "http://localhost:8080/trigger?message=hello"
 ```
 
 Read one queued message:
 ```bash
-curl -u admin:change-me http://localhost:8080/read
+curl -u "$APP_SECURITY_USERNAME:$APP_SECURITY_PASSWORD" http://localhost:8080/read
 ```
 
 Drain messages:
 ```bash
-curl -u admin:change-me http://localhost:8080/drain
+curl -u "$APP_SECURITY_USERNAME:$APP_SECURITY_PASSWORD" http://localhost:8080/drain
 ```
 
-Check app health:
+Check app health (public, no auth; component details only shown to authenticated users):
 ```bash
-curl -u admin:change-me http://localhost:8080/actuator/health
+curl http://localhost:8080/actuator/health
 ```
 
 ## 7) Notes
-- Default username is admin.
-- Default password is change-me unless overridden with APP_SECURITY_PASSWORD.
-- Do not leave default credentials in production.
+- There are no default credentials: the app fails fast at startup if `APP_SECURITY_USERNAME` or `APP_SECURITY_PASSWORD` is unset/blank.
+- Never commit real secrets — `.env` is git-ignored; keep `.env.example` as the template.
+- Do not reuse credentials between the RabbitMQ broker and the app auth.
 - For real deployments, use stronger auth, HTTPS, and least-privilege roles.
