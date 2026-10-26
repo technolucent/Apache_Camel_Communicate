@@ -31,3 +31,13 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### AI assistant tooling (local only) ###
+.claude/
+.agents/
+agent/
+skills-lock.json
+
+### Secrets / local env ###
+.env
+.env.local
